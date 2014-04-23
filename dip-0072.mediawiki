@@ -1,0 +1,27 @@
+<pre>
+  DIP: 72
+  Title: dogecoin: URI extensions for Payment Protocol (Dogecoin)
+  Author: Ross Nicoll <jrn@jrn.me.uk>
+  Status: Draft
+  Type: Standards Track
+  Created: 2014-04-23
+</pre>
+
+==Abstract==
+
+This DIP describes an extension to the dogecoin: URI scheme (DIP 21) to
+support the payment protocol (DIP 70). This is derived from BIP0072,
+and modifies the MIME type in the "Accept" header example.
+
+==Specification==
+
+Dogecoin client software MUST include a suitable "Accept" HTTP header
+in all HTTP requests. Format of the "Accept" header is defined in
+RFC 2616. MIME types are defined in DIP0071.
+
+
+==References==
+
+[[http://www.w3.org/Protocols/rfc2616/rfc2616.html|RFC 2616]] : Hypertext Transfer Protocol -- HTTP/1.1 
+
+[[dip-0071.mediawiki|DIP 0071]] : Payment Protocol MIME types
