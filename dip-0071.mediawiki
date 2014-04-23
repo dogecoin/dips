@@ -1,0 +1,52 @@
+<pre>
+  DIP: 71
+  Title: Payment Protocol MIME types (Dogecoin)
+  Author: Ross Nicoll <jrn@jrn.me.uk>
+  Status: Draft
+  Type: Standards Track
+  Created: 2014-04-23
+</pre>
+
+==Abstract==
+
+This DIP defines a MIME (RFC 2046) Media Type for Dogecoin payment
+protocol message files. These vary slightly from the MIME types
+defined in BIP0070, in that they use the "x-dogecoin" prefix for
+the subtype.
+
+==Specification==
+
+The MIME type used for Dogecoin payment protocol messages are:
+
+{|
+| Message || Type/Subtype
+|-
+| PaymentRequest || application/x-dogecoin-paymentrequest
+|-
+| Payment || application/x-dogecoin-payment
+|-
+| PaymentACK || application/x-dogecoin-paymentack
+|}
+
+Note: Implementations MAY choose to accept MIME types as follows,
+in addition to the MIME types listed above. These MIME types SHOULD NOT
+be used when creating files, however, as the MIME types are not
+currently registered:
+
+{|
+| Message || Type/Subtype
+|-
+| PaymentRequest || application/dogecoin-paymentrequest
+|-
+| Payment || application/dogecoin-payment
+|-
+| PaymentACK || application/dogecoin-paymentack
+|}
+
+==References==
+
+[[bip-0070.mediawiki|BIP 0070]] : Payment Protocol
+
+[[dip-0070.mediawiki|DIP 0070]] : Payment Protocol (Dogecoin)
+
+[[bip-0071.mediawiki|BIP 0071]] : Payment Protocol MIME types

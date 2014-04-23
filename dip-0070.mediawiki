@@ -1,0 +1,28 @@
+<pre>
+  DIP: 70
+  Title: Payment Protocol (Dogecoin)
+  Author: Ross Nicoll <jrn@jrn.me.uk>
+  Status: Draft
+  Type: Standards Track
+  Created: 2014-04-23
+</pre>
+
+==Abstract==
+
+This DIP describes changes to BIP0070 to adapt it to be suitable for use with Dogecoin Core.
+Decisions made in BIP0070 are Bitcoin-specific, and minor changes are required to ensure no
+accidental cross-over between the two specifications. This specification should be read
+in combination with DIP0071.
+
+===PaymentDetails/PaymentRequest===
+
+Where network names in BIP0070 are "main" and "test", for Dogecoin the network names
+"doge-main" and "doge-test" are to be used instead. The name of the coin is included
+in the network names in order to ensure there is no risk of further complication from
+any coins further forking this specification.
+
+==References==
+
+[[bip-0070.mediawiki|BIP 0070]] : Payment Protocol
+
+[[bip-0071.mediawiki|BIP 0071]] : Payment Protocol MIME types
