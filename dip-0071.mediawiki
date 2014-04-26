@@ -11,8 +11,10 @@
 
 This DIP defines a MIME (RFC 2046) Media Type for Dogecoin payment
 protocol message files. These vary slightly from the MIME types
-defined in BIP0070, in that they use the "x-dogecoin" prefix for
-the subtype.
+defined in BIP0070, in that they use the "vnd.doge.payment"
+subtree. These MIME types are to be submitted to IANA for registry
+when formal standards have been prepared, as per RFC 6838 section
+3.2
 
 ==Specification==
 
@@ -21,26 +23,11 @@ The MIME type used for Dogecoin payment protocol messages are:
 {|
 | Message || Type/Subtype
 |-
-| PaymentRequest || application/x-dogecoin-paymentrequest
+| PaymentRequest || application/vnd.doge.payment.request
 |-
-| Payment || application/x-dogecoin-payment
+| Payment || application/vnd.doge.payment.payment
 |-
-| PaymentACK || application/x-dogecoin-paymentack
-|}
-
-Note: Implementations MAY choose to accept MIME types as follows,
-in addition to the MIME types listed above. These MIME types SHOULD NOT
-be used when creating files, however, as the MIME types are not
-currently registered:
-
-{|
-| Message || Type/Subtype
-|-
-| PaymentRequest || application/dogecoin-paymentrequest
-|-
-| Payment || application/dogecoin-payment
-|-
-| PaymentACK || application/dogecoin-paymentack
+| PaymentACK || application/vnd.doge.payment.ack
 |}
 
 ==References==
