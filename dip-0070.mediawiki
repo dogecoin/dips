@@ -16,10 +16,10 @@ in combination with DIP0071.
 
 ===PaymentDetails/PaymentRequest===
 
-Where network names in BIP0070 are "main" and "test", for Dogecoin the network names
-"doge-main" and "doge-test" are to be used instead. The name of the coin is included
-in the network names in order to ensure there is no risk of further complication from
-any coins further forking this specification.
+Where network names in BIP0070 are "main" and "test", for Dogecoin the networks are
+referred to via genesis block hash. The field for this is "genesis". This ensures
+forward-compatibility with other coins and networks, without requiring network
+names to be detailed in a central directory.
 
 ==References==
 
