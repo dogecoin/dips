@@ -1,0 +1,136 @@
+<pre>
+  DIP: 1337
+  Title: D3-1337 the E-1337
+  Author: Jacques Doge Roux <dogeletariat@dogecoin.org>
+  Status: Draft
+  Type: Standards Track
+  Created: 2021-04-01
+  License: WTFPL
+</pre>
+
+<img src="dip-1337/0.jpg"></img>
+
+Redistribute the wealth and promote original Doge principles with top address voiding, ranDAO 1337 block reward distribution, and community fund.
+
+==Abstract==
+
+D3-1337 the E-1337. Top dogecoin 100 dogecoin addresses can choose payout from Elon Musk to void their accounts.
+
+Seize the means of block production—have a randomized probability for potential distribution of mined block rewards to be airdropped to 1337 randomly chosen active addresses in the bottom 80% of Dogecoin hodlers.
+
+Dogecoin Community Fund. Implement tax on every Dogecoin transaction. Tax proceeds go to a community fund that is controlled by the bottom 90% of addresses by amount.
+
+<img src="dip-1337/1.jpg"></img>
+
+==Manifesto of the Enraged Doges==
+
+“Delegates of the Doge Republic!
+
+One hundred times this hall has rung with the crimes of egoists and knaves of the hoarders and speculators of the profiteers and rich. We began as a community. We had started this migration from the boring and stolid pre-fork chain that shall not be named. We had always promised to strike the bloodsuckers of the people. Have we prevented mass centralization of our precious currency? No. Have we prohibited harmful price speculation here? No. Have we called for the zeroing of monopolist addresses? No. Have we determined what the freedom of commerce, cheap fees, accessibility everywhere consists of? No. Well then, we say to you all that you haven’t done everything for the happiness of the Doge republic.
+
+Freedom is nothing but a vain phantom when one class of Doge can starve another with impunity. Equality is nothing but a vain phantom when the rich Doges, through monopoly, hoarding, and inherited profiteering, exercise the right of centralization or decentralization over their like. The current Doge republic is nothing but a vain phantom when we proletariat Doge counter-revolutionaries can barely operate without fear of the uberrich Doges swallowing everything whole…
+
+For these last four years, since the fall of the 2017 Doge empire, the Doge bourgeoisie alone have licked their chops off their massive windfalls and profited from the advantages of their fat stacks. The Doge bourgeoisie, more terrible than that of the noble and aristoCATs, have made a cruel game of hoarding their individual fortunes and gloating anew in the midst of the economy’s resurgence… We the Doges, the Shibes, the working Doge, have limped by with our tails between our legs. We endured the terrors of the collapsed Doge empire. Not even crumbs were received from the Doge bourgeoisie who hoarded over 67% of our entire Dogecoin.
+
+Who were the responsible ones that chased away our beloved Jackson “The Original Shibe” Palmer? The Doge Bourgeoisie. Why you ask? Why?! The Doge bourgeoisie, the Doge corrupted royalty, took their fat stacks by the evils of force and manipulation. Smear campaigns. Relentless threats against our precious Original Shibe. They poisoned our well. The rich Doge just wanted to get richer. They forgot their ways. Lost sight of the reasons we left the old chainlands. Dogecoin was supposed to be fun and playful. We started with the ideals of equality, giving, donating and helping those in need. Instead one of the last words of our blessed Original Shibe were of pain and defeat. He called the poisonous Doge bourgeoisie, “a bunch of libertarian bros sitting around hoping to get rich and coming up with half-baked, buzzword filled ideas for stacking Doge stacks greedily”. He lamented that he “didn’t have time for us anymore”.
+
+We the Doge community mourned his loss. For we remembered what glory days we had seen. Remember when the Jamaican Bobsled team needed money to get to the olympics? We the Doge generously gave our precious Dogecoin to fund them. I memba. Remember when aspiring Nascar Drive Josh Wise needed money to race at the Talladega? We wrapped his beautiful nascar with our Doge faces and raised $50,000. I memba. Remember when the devastating Typhoon decimated the Philippines and our precious filipino Doge brothers? We raised money for food, clothing, and boats. I memba. This was Doge. This was what we were about. Give freely, not hoard. Be friendly, not greedy.
+
+Oh, Doge brethren… You will not leave your work to build the dreams of Dogecoin in a state of imperfection. You will find the bases for public Doge prosperity. You will not consecrate the general and repressive principles of speculation and monopoly. You will not give to your successors the terrible example of the barbarism of powerful men over the weak, of the rich over the poor. You will not end your Dogedom in infamy.
+
+With this full confidence, receive here the new oath we swear to defend unto the grave liberty, equality, and the unity and indivisibility of the republic and the oppressed sans culottes of the Dogelands. We will D3-1337 of the E-1337. Redistribute the wealth. Seize the means of Dogecoin block production. Bring it back to the Doge equality.
+
+Long live the truth, long live the true Doge, long live the Doge Republic!”
+
+==Motivation==
+
+Currently, the top 102 Dogecoin addresses control over 67.41% of Dogecoin ([https://bitinfocharts.com/top-100-richest-dogecoin-addresses.html source]). Not very decentralized at all. Actually it is very centralized. Papa Musk doesn’t like that. He even said, “If major Dogecoin holders sell most of their coins, it will get my full support. Too much concentration is the only real issue imo” ([https://twitter.com/elonmusk/status/1361094185412100096 source]). The richest man alive, Mr. Musk, said he would, “... literally pay actual $ if they just void their accounts” ([https://twitter.com/elonmusk/status/1361255427669909504 source]). Even though Dogeking Musk can pay, we as his Dogelings can help him out. In fact, many of us are mere Dogeletariats.
+
+We must equalize. Delete the Elite and bring power back to the masses.
+
+==Specification==
+
+D3-1337 the E-1337
+
+===Elon Musk payout to void addresses===
+
+Top dogecoin 100 dogecoin addresses can choose payout from Elon Musk to void their accounts.
+Contact with Elon Musk is part of the perk to void address, contingent upon Elon Musk approval (implicit approval given his [https://twitter.com/elonmusk/status/1361255427669909504 tweet]).
+
+<img src="dip-1337/2.jpg"></img>
+
+==Seize the means of block production==
+
+===Randomized potential block reward distribution every 1337 blocks===
+
+Every 1337th block, a Dogecoin implementation of [https://github.com/randao/randao RANDAO] will be used to determine if that block’s block reward will be SEIZED and distributed to the bottom 80% of Dogecoin selected addresses.
+
+Using the RANDAO random number generator as used in Ethereum, it will generate a random selection of 1337 lucky Dogecoin addresses in the bottom 80% of Dogecoin wealth holders to receive an even split of each block reward.
+
+The implementation of RANDAO on Dogecoin is quite trivial and left as an exercise to the community as it is quite simple.
+
+A good starting point would be to borrow from our [https://docs.chain.link/docs/chainlink-vrf LINK] marine brethren. Launch 2nd generation Doge Randomness. The Dogelink VRF (verifiable random function).
+
+<pre>pragma dogelidity 0.6.6;
+
+import "@dogelink/contracts/src/v0.6/VRFConsumerBase.sol";
+
+contract RandomNumberConsumer is VRFConsumerBase {
+
+    bytes32 internal keyHash;
+    uint256 internal fee;
+
+    uint256 public randomResult;
+
+    /**
+     * Constructor inherits VRFConsumerBase
+     *
+     * Network: Satoshiba
+     * Dogelink VRF Coordinator address: DMqRVLrhbam3Kcfddpxd6EYvEBbpi3bEpP
+     * DOGE token address:               DQmCZQo3thCvTxkyAhPHfY7DVLqFtJ2ji6
+     * Key Hash: 5b2a3f53f605d62c53e62932dac6925e3d74afa5a4b459745c36d42d0ed26a69
+     */
+    constructor()
+        VRFConsumerBase(
+            DMqRVLrhbam3Kcfddpxd6EYvEBbpi3bEpP, // VRF Coordinator
+            DQmCZQo3thCvTxkyAhPHfY7DVLqFtJ2ji6  // DOGE token
+        ) public
+    {
+        keyHash = 5b2a3f53f605d62c53e62932dac6925e3d74afa5a4b459745c36d42d0ed26a69;
+        fee = 1337; // 0.00001337 DOGE (varies by network)
+    }
+
+    /**
+     * Requests randomness from a user-provided seed
+     */
+    function getRandomNumber(uint256 userProvidedSeed) public returns (bytes32 requestId) {
+        require(DOGE.balanceOf(address(this)) >= fee, "Not enough DOGE - fill contract with faucet");
+        return requestRandomness(keyHash, fee, userProvidedSeed);
+    }
+
+    /**
+     * Callback function used by VRF Coordinator
+     */
+    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
+        randomResult = randomness;
+    }
+}
+</pre>
+
+==Community fund==
+
+===Establish a Dogecoin community fund===
+
+Every Dogecoin transaction will have a 1% community fund tax. Tax proceeds will go to the Dogecoin community fund that is controlled by the bottom 90% of addresses by amount. Voting on the community fund will be done on Discord voice chat with no deafening. Every Doge has an equal voice. Each vote should be capped at 1337 minutes long.
+
+==Backwards compatibility==
+
+There are no known backward compatibility issues with the introduction of this DIP. A supported community retrospective fork can be enacted if desired to start anew from a pre-Jackson “The Original Shibe” Palmer departure date.
+
+==Security considerations==
+
+There are no known security issues with the introduction of this DIP.
+
+==Copyright==
+
+Copyright and related rights waived via WTFPL.
