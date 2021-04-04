@@ -1,0 +1,28 @@
+<pre>
+  DIP: 75
+  Title: For the Users
+  Author: Gene Redinger <gene.redinger@gmail.com>
+  Status: Concept
+  Type: Standards Track
+  Created: 2020-04-04
+</pre>
+
+
+==Abstract==
+
+This DIP reduces changes the proof of work scheme to a less energy intensive method of governance.
+
+Currently, cryptocurrency work uses a lot of energy; however there are methods of determining distributed consenus in a secure mannor using
+less power. Effectively, by moving solving work on ASICs, GPUs, and CPUs and moving those to querying bits on a spinning disk,
+overall energy consumption is reduced.
+
+==Motivation==
+
+Climate Chaos is unfolding around us. By taking direct action in changing the core of cryptocurrencies
+to a more environmentally friendly method of work, we grant ourselves
+some additional time to address this chaos.
+
+==Protocol==
+
+No finite protocol has been suggested. Proof of Space-Time suggestions are absolutely welcome.
+

@@ -1,0 +1,45 @@
+<pre>
+  DIP: 74
+  Title: For the Users
+  Author: Gene Redinger <gene.redinger@gmail.com>
+  Status: Draft
+  Type: Standards Track
+  Created: 2020-04-04
+</pre>
+
+==Abstract==
+
+This DIP reduces the transaction fee from 1 DOGE to .05 DOGE per KB for min transaction fee.
+
+==Motivation==
+
+Many economic and specutative groups have taken the coin and turned it into something it was never meant
+to be. The community has the right to express their thoughts on this issue by taking direct action in creating
+a more friendly ecosystem for miners and users without adding in additional benefits for the speculators.
+
+This DIP is meant to be introduced alongside DIP 73 to allow for a more equiable network.
+
+== Protocol ==
+
+This DIP describes another change in the underlying core code for fee. The change will occur at 2^22 block.
+
+<pre>
+//TODO code change
+</pre>
+
+== Speculative Impacts ==
+
+The average network fee may or may not increase depending on the size of the mempool.
+
+== Security Impacts ==
+
+This DIP has security implication in terms of availability of the netwrok.
+
+By reducing the overall transaction fee, this allows for a malciious user to use "dust" transactions
+to effectively prevent new transactions from being recorded. This attack was previously used to prevent
+transactions on the network which lead to the original fee increase.
+
+However, since the change was originally made, the real world economics shifted in regard to the coin's security.
+
+
+Attacks on the networks are still currently feasible with nation state resources with current fees.
