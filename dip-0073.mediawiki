@@ -1,0 +1,58 @@
+<pre>
+  DIP: 73
+  Title: For the Miners
+  Author: Gene Redinger <gene.redinger@gmail.com>
+  Status: Draft
+  Type: Standards Track
+  Created: 2020-04-04
+</pre>
+
+==Abstract==
+
+This DIP increase mining rewards from the existing 10,000 flat reward to 25,000 dogecoin flat reward.
+
+==Motivation==
+
+Many economic and specutative groups have taken the coin and turned it into something it was never meant
+to be. The community has the right to express their thoughts on this issue by taking direct action in creating
+a more friendly ecosystem for miners and users without adding in additional benefits for the speculators.
+
+This DIP is meant to be introduced alongside DIP 74 to allow for a more equiable network.
+
+== Protocol ==
+
+This DIP describes a change in the underlying core code for reward calculation. The change will occur at 2^22 block.
+
+<pre>
+if (!consensusParams.fSimplifiedRewards)
+    {
+        // Old-style rewards derived from the previous block hash
+        const std::string cseed_str = prevHash.ToString().substr(7, 7);
+        const char* cseed = cseed_str.c_str();
+        char* endp = NULL;
+        long seed = strtol(cseed, &endp, 16);
+        CAmount maxReward = (1000000 >> halvings) - 1;
+        int rand = generateMTRandom(seed, maxReward);
+
+        return (1 + rand) * COIN;
+    } else if (nHeight < (6 * consensusParams.nSubsidyHalvingInterval)) {
+        // New-style constant rewards for each halving interval
+        return (500000 * COIN) >> halvings;
+    } else if (nHeight >= (1 << 22)) { // on block 4,194,304
+        return 25000 * COIN; // increase reward to 25,000
+    } else {
+        // Constant inflation
+        return 10000 * COIN;
+    }
+</pre>
+
+== Speculative Impacts ==
+
+The economic market may respond negatively to the announced increase in supply of the crypto. This could lead to
+more violitile markets leading up to the change.
+
+However, 1 doge will be 1 doge rather it's minted from block 2^0 or 2^128.
+
+== Security Impacts ==
+
+This DIP does not impact the security of the network in terms of availability, confidentiality, and integrity.
