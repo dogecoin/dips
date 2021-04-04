@@ -21,10 +21,12 @@ This DIP is meant to be introduced alongside DIP 73 to allow for a more equiable
 
 == Protocol ==
 
-This DIP describes another change in the underlying core code for fee. The change will occur at 2^22 block.
+This DIP describes another change in the underlying core code for fee. There is no governance for this change to take affect.
+
+It is suggested that the community manually update their fee amount until the change is made in core.
 
 <pre>
-//TODO code change
+static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = COIN/20;
 </pre>
 
 == Speculative Impacts ==
@@ -41,5 +43,12 @@ transactions on the network which lead to the original fee increase.
 
 However, since the change was originally made, the real world economics shifted in regard to the coin's security.
 
-
 Attacks on the networks are still currently feasible with nation state resources with current fees.
+
+---
+
+The availability of transactions may be impacted due to some clients not being updated
+and therefore client transactions with lower fees being rejected.
+
+This issue can be mitigated by using the manual flag early allowing for the users on the
+community to accept lower fee transactions early.
