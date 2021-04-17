@@ -1,11 +1,12 @@
 Dogecoin Standards Documents
 ============================
 
-This repository contains three types of files:
+This repository contains four types of files:
 
 * BIPs: Bitcoin Improvement Proposals
 * DIPs: Dogecoin-specific variations to existing BIPs
 * Standards documents: Draft standards for submission as RFCs (Request For Comments)
+* GDP: Good Doggo Proposals are dogecoin-specific variations.
 
 BIP documents are copied to this repository in order to provide a static reference point from
 which DIPs are derived. DIPs are only to be used where minor modifications are required to a
