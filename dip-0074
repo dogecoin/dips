@@ -1,0 +1,33 @@
+<pre>
+  DIP: 74
+  Title: Doginal Channels (Dogecoin | DRC-20)
+  Author: George Artem <artomk@uw.edu>
+  Status: Draft Abstract
+  Type: Informational - Collaboration Request
+  Created: 2023-09-10
+</pre>
+
+==Abstract==
+
+This DIP describes introduction and changes proposed in BOLTS #0 #1 #2 #3 and #5 to adapt them to be suitable for use with dogecoin-node.
+Decisions made in BOLTS are Bitcoin-Lightning-specific, and changes and collaboration will be required to understand existing vs desired
+future state. This brief should be read in combination with BOLTS summary <a href="https://github.com/lightning/bolts/" target"_blank">here.</a>
+
+==Motivation==
+
+DRC-20 deploy, mint, transfer and other inscription functions create a risk to the primary function of dogecoin as a medium of exchange. The community has 
+the right to express their thoughts on this issue by creating a DIP in order to urge creation of a more friendly ecosystem for node operators and consumers while attempting to
+address the issues associated with the limited function of DRC-20 marketplaces without implementing a complete re-write to PoS.
+
+This DIP is meant to (re)introduce the concepts in the BOLTS above and to provide a mechanism for off-chain transfer of deployed DRC-20, dogemap and doge-dns inscriptions
+in order to support at minimum 33X growth in daily transactions prior to next run on crypto and achieve goals outlined in the "10/10/100X problem".
+
+== Speculative Impacts ==
+
+To address the issues associated with transaction time and transaction cost presented by DRC-20 and avoid future impacts of potential "spikes" associated with DRC-20. 
+To avoid necessity to consider PoS and face potential negative impacts to community sentiment and economic market disruption. To avoid the risks associated with a "lift and shift" migration
+to PoS.
+
+== Security Impacts ==
+
+DRC-20 security is presently secured from counterfeiting via DRC-20 marketplace indexing and data sharing.
