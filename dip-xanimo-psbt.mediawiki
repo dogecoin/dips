@@ -1,0 +1,188 @@
+<pre>
+  DIP: (unassigned, do not self-assign; editor will number)
+  Layer: Applications
+  Title: Partially Signed Transaction format for Dogecoin (PSBT / PSDT)
+  Author: xanimo <bluezr@dogecoin.com>
+  Comments-URI: (to be assigned)
+  Status: Draft
+  Type: Standards Track
+  Created: 2026-06-16
+  License: BSD-2-Clause
+  Requires: BIP174
+  Replaces: (none)
+</pre>
+
+Draft for discussion. This document proposes adopting a Partially Signed Transaction format as a Dogecoin standard, derived from BIP174. It presents the naming decision (retain "PSBT" or adopt a Dogecoin-branded "PSDT") neutrally and shows that the naming choice is coupled to a wire-format compatibility choice. It does not pre-decide the name; it frames the trade so the community can.
+
+== Abstract ==
+
+Dogecoin Core and libdogecoin both have working implementations of the BIP174 Partially Signed Bitcoin Transaction format: the Core <code>1.15.0-dev-bip174-psbt</code> branch (PSBT structures and refactored signing API in <code>src/script/sign.{h,cpp}</code>, RPC support, and wallet/functional tests) and the libdogecoin <code>0.1.5-dev-psbt</code> branch (multisig finalization, valgrind-clean coverage). Both currently use the unmodified BIP174 magic bytes. This DIP proposes formally adopting that format as a Dogecoin standard and resolving the open question of what to call it.
+
+BIP174 fixes a 5-byte magic header at the very start of the serialization, which is the ASCII bytes for "psbt" followed by <code>0xff</code>. Renaming the format to "PSDT" (Partially Signed Dogecoin Transaction) is therefore not a purely cosmetic decision: it either remains a terminology-only relabel that keeps the BIP174 bytes intact (preserving compatibility with the entire Bitcoin PSBT tooling ecosystem), or it changes the magic bytes to "psdt" and creates an intentional, hard incompatibility. This DIP documents both paths and their consequences and asks the community to choose.
+
+== Motivation ==
+
+Partially signed transactions are the foundation of modern multisig, hardware-wallet, and air-gapped signing workflows. Standardizing a single interoperable format for Dogecoin enables wallet vendors, signing devices, and coordination software to interoperate without ad-hoc formats.
+
+The implementation work is largely done; what is missing is a community-ratified standard that fixes the format and its identity. Two questions must be answered together:
+
+# Does Dogecoin adopt BIP174 as its PSBT standard (with any Dogecoin-specific fields)?
+# Is the format called PSBT (keeping the Bitcoin magic) or PSDT (Dogecoin-branded), and does that rename touch the wire format?
+
+== Background: the BIP174 magic header ==
+
+A BIP174 serialization begins with a fixed 5-byte magic header:
+
+<pre>
+  <magic> := 0x70 0x73 0x62 0x74 0xFF
+              p    s    b    t   (separator)
+</pre>
+
+The first four bytes are ASCII <code>psbt</code>; the fifth byte <code>0xFF</code> is a separator chosen so that any non-PSBT deserializer fails to parse the data as an ordinary transaction. Because the 5-byte header is fixed, no ordinary transaction can be parsed by a PSBT deserializer, and, critically for this DIP, a deserializer that expects one magic value will reject any serialization carrying a different magic value.
+
+This is the technical fact that couples the name to compatibility: if Dogecoin keeps the <code>0x70736274ff</code> magic, Dogecoin PSBTs are byte-compatible with Bitcoin PSBT parsers at the framing level; if Dogecoin changes the magic to <code>0x70736474ff</code> ("psdt"), every existing PSBT tool will reject Dogecoin transactions, and Dogecoin tools will reject Bitcoin PSBTs, by design.
+
+== The naming decision (presented neutrally) ==
+
+=== Option N1: keep "PSBT", keep the magic (maximum compatibility) ===
+
+Adopt BIP174 as-is. The format is called "PSBT" in Dogecoin too; magic bytes remain <code>0x70736274ff</code>. "Bitcoin" in the acronym is treated as historical/standard, the way many chains reuse Bitcoin-derived formats and terminology.
+
+Advantages
+* Immediate interoperability with the entire existing PSBT ecosystem (hardware wallets, coordinators, libraries such as <code>btcsuite/psbt</code>, HWI, etc.) at the framing level.
+* Zero divergence to maintain; bug-for-bug parity with the most-tested PSBT implementations.
+* No new tooling required; existing PSBT parsers accept Dogecoin PSBTs structurally.
+
+Disadvantages / objections
+* "Bitcoin" in a Dogecoin standard's name is a branding/identity mismatch some community members object to on principle.
+* Compatibility is only at the framing level; chain-specific fields and validation still differ (see "Dogecoin-specific considerations"), so "compatible" can be misleading to users.
+
+=== Option N2: adopt "PSDT", terminology only, magic unchanged ===
+
+Call the format "PSDT" (Partially Signed Dogecoin Transaction) in all Dogecoin documentation, RPCs, and UIs, but keep the BIP174 magic bytes <code>0x70736274ff</code> unchanged on the wire. The rename is purely a human-facing label.
+
+Advantages
+* Dogecoin-branded identity in user-facing surfaces.
+* Retains full framing-level compatibility with existing PSBT tooling, since the bytes are unchanged.
+
+Disadvantages / objections
+* A format literally still carrying the ASCII bytes "psbt" while being called "PSDT" is arguably confusing or dishonest; a reader inspecting the bytes sees "psbt".
+* Splits the difference in a way that may satisfy neither the compatibility camp nor the identity camp.
+
+=== Option N3: adopt "PSDT", new magic (intentional incompatibility) ===
+
+Call the format "PSDT" and change the magic bytes to <code>0x70 0x73 0x64 0x74 0xFF</code> ("psdt" + <code>0xFF</code>), making Dogecoin PSDTs deliberately incompatible with Bitcoin PSBT parsers.
+
+Advantages
+* Clean, honest Dogecoin-native identity: the bytes match the name.
+* Prevents accidental cross-chain misuse, since a Bitcoin tool cannot silently operate on a Dogecoin transaction and vice versa, which can be framed as a safety feature.
+
+Disadvantages / objections
+* Breaks compatibility with every existing PSBT tool; Dogecoin would need to fork/patch or re-implement the entire tooling stack (signers, hardware-wallet firmware, coordinators).
+* Large, ongoing maintenance burden for marginal benefit if the data model is otherwise identical.
+* Hardware wallet vendors are unlikely to add a Dogecoin-specific magic without significant demand.
+
+== Recommendation ==
+
+This DIP makes no recommendation among N1/N2/N3. It asserts only that the decision must be made with the coupling in mind: N2 and N3 are not the same choice, and "rename to PSDT" is ambiguous until the community decides whether the magic bytes change. The most consequential axis is compatibility-vs-identity, and that is a community/stakeholder judgment, not a technical one.
+
+== Specification ==
+
+Independent of the naming outcome, the adopted format is BIP174 with the following Dogecoin specifics made explicit.
+
+=== Format ===
+
+The structure is BIP174 verbatim:
+
+<pre>
+  <psbt>       := <magic> <global-map> <input-map>* <output-map>*
+  <magic>      := (see naming decision; N1/N2: 0x70736274FF, N3: 0x70736474FF)
+  <global-map> := <keypair>* 0x00
+  <input-map>  := <keypair>* 0x00
+  <output-map> := <keypair>* 0x00
+  <keypair>    := <key> <value>
+  <key>        := <keylen> <keytype> <keydata>
+  <value>      := <valuelen> <valuedata>
+</pre>
+
+All BIP174 global, per-input, and per-output key types are adopted as specified. Key uniqueness, minimal compact-size encoding, and the <code>0x00</code> map separators are unchanged.
+
+=== Version ===
+
+Adopt PSBT version 0 semantics as the baseline (<code>PSBT_GLOBAL_UNSIGNED_TX</code> required; <code>PSBT_GLOBAL_VERSION</code> omitted or 0). Whether to also adopt the BIP370 (PSBT v2) extensions is left as a follow-up question, not settled here.
+
+=== Magic bytes ===
+
+The magic bytes are the single field whose value depends on the naming decision:
+
+{| class="wikitable"
+! Option !! Name !! Magic bytes !! Bitcoin-tool compatibility
+|-
+| N1 || PSBT || <code>0x70 0x73 0x62 0x74 0xFF</code> || yes (framing)
+|-
+| N2 || PSDT (label only) || <code>0x70 0x73 0x62 0x74 0xFF</code> || yes (framing)
+|-
+| N3 || PSDT (native) || <code>0x70 0x73 0x64 0x74 0xFF</code> || no (intentional)
+|}
+
+== Dogecoin-specific considerations ==
+
+Even under N1/N2 (identical magic), Dogecoin PSBTs are not unconditionally interchangeable with Bitcoin PSBTs, and the DIP must state this so "compatible" is not overread:
+
+* No SegWit (currently). Until SegWit activates on Dogecoin (separate DIP), <code>PSBT_IN_WITNESS_UTXO</code>, witness-script, and witness-related fields are not meaningful for Dogecoin mainnet inputs; only <code>PSBT_IN_NON_WITNESS_UTXO</code> applies. The PSBT format still carries these fields structurally, but Dogecoin signers must not produce witness signatures for non-witness inputs. If/when SegWit activates, the witness fields become live and this restriction lifts.
+* AuxPoW headers. PSBT operates on transactions, not headers, so AuxPoW does not affect the format directly. No PSBT field encodes header/version data.
+* Address and script types. Dogecoin's address prefixes and (post-SegWit) bech32 HRPs (<code>doge</code>/<code>tdge</code>/<code>dcrt</code>) differ from Bitcoin; tooling that derives addresses from PSBT output scripts must use Dogecoin network parameters. This is a tooling concern, not a format change.
+* Proprietary type space. BIP174 reserves keytype <code>0xFC</code> for proprietary use with a length-prefixed string identifier. Any genuinely Dogecoin-specific PSBT data (should the need arise) should use the proprietary namespace with a <code>"doge"</code> identifier rather than minting new global/input/output keytypes, to avoid colliding with future BIP174 assignments.
+
+== Backwards compatibility ==
+
+* N1 and N2 preserve framing-level compatibility: existing PSBT libraries parse Dogecoin PSBTs structurally. Semantic correctness still requires Dogecoin network parameters and (until SegWit) the non-witness restriction above.
+* N3 is intentionally incompatible at the magic-byte level. Every tool must be Dogecoin-aware. Migration would require coordinated tooling updates.
+* In all cases, this is an application-layer standard, not a consensus change: no soft fork, no node-version gating. PSBTs are constructed and signed off-chain; only the final network-serialized transaction touches consensus.
+
+== Reference implementation ==
+
+Two independent implementations target this format, both currently using the
+unmodified BIP174 magic (<code>0x70736274ff</code>):
+
+* Dogecoin Core on branch <code>1.15.0-dev-bip174-psbt</code>. Imports the
+  upstream BIP174 PSBT structures and the refactored signing API into
+  <code>src/script/sign.{h,cpp}</code> and <code>src/rpc/rawtransaction.cpp</code>,
+  with <code>src/wallet/test/psbt_wallet_tests.cpp</code> and the
+  <code>qa/rpc-tests/rpc_psbt.py</code> functional suite. The magic constant is
+  <code>PSBT_MAGIC_BYTES[5] = {'p','s','b','t',0xff}</code> and the committed test
+  vectors are byte-identical to Bitcoin's BIP174 vectors.
+* libdogecoin on branch <code>0.1.5-dev-psbt</code>. BIP174 compliance
+  review, multisig finalization, valgrind-clean test coverage, and a documented
+  pre-existing wallet reorg-leak fix.
+
+Because both implementations already encode the BIP174 magic, the existing code
+assumes N1 or N2 (the bytes do not change). Choosing N3 would require
+editing the magic constant in both codebases (to
+<code>{'p','s','d','t',0xff}</code>, i.e. <code>0x70736474ff</code>) and
+re-deriving every test vector, since the magic prefix participates in the
+serialized bytes. This is a concrete, non-trivial cost that should weigh in the
+N1/N2-vs-N3 decision: N3 is not a documentation change, it is a code-and-test
+change across two repositories plus all downstream tooling.
+
+This DIP would ratify the format both implementations target and resolve its
+naming. If N3 is chosen, the magic-byte constant and test vectors in both
+branches change; if N1/N2, no change to the wire format is required.
+
+== Open questions for discussion ==
+
+# N1 vs N2 vs N3: the compatibility-vs-identity decision, made with the magic-byte coupling explicit.
+# If N2: is a format whose bytes say "psbt" but whose name says "PSDT" acceptable, or is that worse than either pure option?
+# Should Dogecoin adopt PSBT v2 (BIP370) now, or standardize v0 first and defer v2?
+# Should any Dogecoin-specific data use the BIP174 proprietary (<code>0xFC</code>) namespace with a <code>"doge"</code> identifier, and is any such data actually needed today?
+# Interaction with the SegWit activation DIP: should PSBT standardization wait on SegWit, proceed independently for non-witness inputs now, or explicitly scope itself to non-witness until SegWit lands?
+
+== References ==
+
+* BIP174, Partially Signed Bitcoin Transaction Format
+* BIP370, PSBT Version 2
+* libdogecoin <code>0.1.5-dev-psbt</code>, reference implementation
+
+== Copyright ==
+
+This document is licensed under the BSD-2-Clause license.
