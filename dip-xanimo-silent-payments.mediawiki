@@ -1,0 +1,178 @@
+<pre>
+  DIP: (unassigned, do not self-assign; editor will number)
+  Layer: Applications
+  Title: Silent payments over P2PKH
+  Author: xanimo <bluezr@dogecoin.com>
+  Comments-URI: (to be assigned)
+  Status: Draft
+  Type: Standards Track
+  Created: 2026-11-04
+  License: BSD-2-Clause
+  Requires: BIP352
+  Replaces: (none)
+</pre>
+
+Draft for discussion. This proposes adopting BIP352 silent payments, restricted to P2PKH inputs, as a reusable address format for Dogecoin. A working implementation exists and is linked below. BIP352 specifies the eligibility rule it depends on; what is measured here, over the whole chain rather than a sample, is that the rule never fails to find a key and never finds two. Two reviewers have built it and run the tests, and one wrote independent attacks against it; the cryptography itself has had no outside eyes.
+
+== Abstract ==
+
+A silent payment address is a reusable static string that a sender turns into an ordinary one-time P2PKH output, by performing ECDH against the address's scan key and the transaction's own inputs. A tip jar can publish one string forever and every payment to it still lands on a distinct address that no third party can link back to the published string.
+
+This is wallet level. There is no consensus change, no fork, no new script type, and a chain that never adopts it is unaffected. The outputs are plain P2PKH and indistinguishable from any other payment. A BIP352 output on Bitcoin is an ordinary Taproot output and does not stand out among Taproot outputs either; what differs is the share of the chain each type covers, and P2PKH is a far larger share of Dogecoin than Taproot is of Bitcoin.
+
+== Motivation ==
+
+Dogecoin's culture is built on publishing one address and receiving from strangers. Tip jars, donation addresses, project wallets, addresses pasted into reddit threads in 2014 that are still receiving. That is address reuse, and it is the exact pattern silent payments fixes. Bitcoin mostly solved the same problem socially by pushing per-invoice addresses through payment processors, which Dogecoin never had and mostly does not want.
+
+The measurement backs it up rather than just the intuition. Walking every block to height 6381544, 278571058 transactions have at least one input a key can be recovered from, out of 412261244 non-coinbase transactions. That is two thirds of all Dogecoin transactions, and it is an upper bound on the eligible count rather than the count itself: it was measured before the rule was narrowed to compressed keys, so transactions whose only recoverable keys were uncompressed are still inside it. Tightening it means re-running the harness, and the uncompressed share of inputs is 4.6 percent, so the bound is close.
+
+== Scanning cost is the real constraint ==
+
+A receiver cannot be told which outputs are theirs, so they derive a candidate for every transaction carrying an eligible input and check it. That is one ECDH per such transaction, forever, and it is the thing that decides whether this is usable rather than the cryptography.
+
+The numbers are measured over the whole chain rather than estimated. 278571058 transactions have an eligible input, so the tweaks themselves are 33 bytes each, which is 9192844914 bytes of payload. The index as actually built over mainnet is 10771497975 bytes, so 38.7 bytes on disk per entry. Scanning the full history once is one <code>ecmult_const</code> per entry, so 278571058 of them, which at 50 microseconds a call is about 3.9 hours of single core CPU. After that, incremental scanning is one minute's worth of blocks at a time and costs nothing worth measuring.
+
+The node pays separately, though it pays the same amount. Building the index is also one curve multiplication per entry, so the same 3.9 hours, spread across a sync rather than paid in one sitting. The index syncs in its own thread and derives each tweak from block undo data, so enabling it on a node that is already synced catches up in the background rather than requiring a reindex. A regtest demo hides the build cost entirely, so it is stated here rather than discovered at deployment.
+
+A full node carries that easily. A light client is harder but not excluded, and the distinction is birth height. The 9.2GB figure counts the tweaks alone. On the wire a <code>CTweakEntry</code> is a 4-byte index and a length-prefixed key, so 38 bytes, and a block's mean is 1659 bytes rather than 1440, before message framing. A wallet created today scans only forward, so roughly 2MB a day at the long-run mean, but the mean is the wrong statistic for a chain whose daily transaction count has ranged from tens of thousands to over two million. That is an ordinary mobile sync. The client derives its candidate output scripts from the tweaks and then needs to know whether any appear in a block without downloading it, which is exactly what a BIP158 compact block filter answers. That path is implemented and described under the reference implementation below; what it has never done is run against mainnet.
+
+Restoring an old wallet is the case that stays expensive, since it means tweaks back to its birth height, up to the full history. The alternative is handing a server the scan key, which reveals every payment that wallet has ever received and gives up the point of the scheme. There is a third option this proposal does not take: BIP352's scanning rule lets a server skip transactions with no unspent output of the paying type, so a restore that wants the balance rather than the history needs only those tweaks. The count of transactions still holding an unspent P2PKH output is measurable from the chainstate and is the number that decision needs.
+
+== What it covers and what it ignores ==
+
+P2PKH inputs only, and compressed keys only. Of 768800287 inputs on the chain, 526056252 are eligible, 217371255 are not P2PKH at all, and 213995083 of those are P2SH. A further 25372780 are P2PKH spends revealing an uncompressed key, which BIP352 does not permit. So this ignores 32 percent of all inputs by design. A sender whose coins are all in P2SH cannot pay a silent payment address at all, and that is a real hole rather than a rounding error.
+
+Sampling that P2SH, 60.7 percent of those inputs do reveal exactly one compressed public key as the first push of the redeem script, which looks at first like a large extension worth having, around 17 percent of all inputs on the chain. Decoding what those scripts do takes the number away again. 97 percent of them are a single key push followed by <code>OP_CHECKSIGVERIFY</code> and then a run of <code>OP_DROP</code>s, which is the reveal side of a data-carrying protocol, and the shape is not confined to the 2023 inscription wave. Files from well before it show the same 97 percent. Another 38 percent of P2SH carries no key at all, being the other half of the same traffic: a data push followed by <code>OP_2DROP OP_2DROP OP_2DROP OP_1</code>. Multisig is 1.2 percent.
+
+So the reachable P2SH is data carriers almost to the exclusion of anything else. Those inputs are not wallets holding coin that someone would spend on a payment, and extending the eligibility rule to cover them would buy close to nothing while adding rules about which redeem shapes commit to their key unconditionally. BIP352 excludes P2SH because a redeem script can branch and a participant can re-sign down a different path after the outputs were derived. The measurement says there is no demand on the other side of that risk worth taking it for. P2SH is out of scope, and the 17 percent ceiling is reported here only so nobody has to rediscover that it overstates real demand by a factor of about thirty.
+
+== Evidence for the eligibility rule ==
+
+Both sides have to agree on which pubkey a given input contributes, because the sender and the receiver each hash the same set of input pubkeys into the shared secret. Disagree and the payment is derivable by neither, so the coins land on an address nobody holds the key to. This is the part that loses funds if it is wrong.
+
+The rule is to walk every data push in the P2PKH scriptSig and take the push whose HASH160 matches the prevout's pubkey hash. BIP352 requires exactly this, in those words: the receiver must parse the scriptSig for the public key even where it does not match the template, because P2PKH scriptSigs are malleable by third parties.
+
+What is not in the spec is whether that parse can fail, and it cannot. <code>OP_CHECKSIG</code> consumes a 33 or 65 byte element, and no opcode left enabled produces one that long: the splice opcodes are disabled, the hash opcodes give 20 or 32 bytes, and arithmetic gives at most 5. So the key was pushed, and <code>OP_EQUALVERIFY</code> fails unless it hashes to the prevout. A no_match is therefore not a shape some future wallet can wander into, and the measurement below confirms the argument rather than standing in for it.
+
+Every block to 6381544, read out of the blk and rev files directly:
+
+<pre>
+    inputs classified   768800287
+    key recovered       551429032   all canonical
+      compressed        526056252   eligible under this rule
+      uncompressed       25372780   not eligible, see below
+    no_match                    0
+    ambiguous                   0
+</pre>
+
+The harness walked the pushes without the encoding filter, so the recovered count measures
+whether the rule can find a key at all, which is the thing in question. Eligibility then takes
+the compressed subset.
+
+A no_match would be a P2PKH input where no push matches, meaning neither party can derive from it. An ambiguous would be two distinct pushes both matching, which needs a HASH160 collision. Both are zero. 526056252 of the eligible keys are compressed and 25372780 uncompressed, and every single one sits in the canonical two-push form, signature then pubkey, so the simpler rule that just takes the last push would have found all of them too. The general rule is kept anyway, because the cost of walking the pushes is nothing and the cost of being wrong once is somebody's coins.
+
+Coverage is complete rather than sampled. 412261244 classified transactions plus 6381545 coinbases, which undo data omits by construction, is 418642789, the chain total to the transaction.
+
+Bitcoin Core's functional test framework has since grown an independent implementation of the same extraction, in <code>src/common/bip352.cpp</code>. Its P2PKH branch walks the scriptSig pushes and takes the one whose HASH160 matches the prevout, which is the rule above arrived at separately by someone else from the same spec. Run over the vectors here, the two agree on the input pubkey sum and the input hash in all 17 eligible cases.
+
+They agree. Both take 33-byte compressed pushes only, which is what BIP352 permits.
+
+An earlier version of this rule also accepted the 65-byte uncompressed form, and the reasoning for dropping it is worth recording because it is the one disagreement the sender check below cannot catch. That check compares the sender's coin selection against the sender's own reading of the scriptSigs, so all it establishes is that the sender agrees with itself. A receiver applying BIP352's rule to an uncompressed input derives a different A, finds nothing, and the payment is unspendable with every check passing.
+
+The cost of conforming is that 25372780 of 551429032 eligible inputs, 4.6 percent all-time, cannot be spent directly into a silent payment. That share is falling: the era sample puts uncompressed at 16.4 percent of 2014 spends and under 2 percent since, and the holder of such a coin can consolidate it into a compressed output first. One extra transaction is a smaller price than an interoperability hazard carried by every wallet built from this document.
+
+What this does not establish: it measures scriptSigs that exist, so it says nothing about a wallet that starts emitting a shape nobody has used yet. A receiver implementation should treat a no_match input as a hard error rather than skipping it, so that if such a wallet ever appears the payment fails loudly instead of silently going somewhere unspendable.
+
+== Why labels cost more ==
+
+BIP352 lets a receiver hand out several addresses that all pay the same wallet, by tweaking the spend key with a label. One of them, label 0, is reserved for the receiver's own change.
+
+The adaptation changes what they cost. In BIP352 a receiver recovers a label by subtracting the unlabelled candidate from the output key, which the transaction publishes, so any number of labels costs the same to scan. Paying to a hash instead means the transaction reveals only HASH160 of the output key and there is nothing to subtract, so labels have to be walked forward: one HASH160 per label per k, on every transaction scanned. Scanning cost is linear in the number of labels a receiver holds, where in BIP352 it is flat.
+
+So labels work, and they are not free the way they are in the BIP. A receiver that wants one address per payer should expect its scanning cost to scale with the number of payers. The reference implementation records every label it hands out, because the address derives from the seed and the label number and therefore looks correct whether or not anything remembered it, while a label the scanner does not know about is a payment nobody ever sees.
+
+== The rule a sender must follow ==
+
+The sender and the receiver derive the input set from different material. The sender knows which coins it owns. The receiver recovers the pubkeys from the scriptSigs, which do not exist until signing has finished. Those are two implementations of one rule, and when they disagree the output commits to a key neither party holds and the coins are simply gone. Writing the rule carefully twice is not sufficient, because the second copy is free to drift and because a signer can emit a scriptSig shape the reader interprets differently.
+
+So a conforming sender must not merely select the right inputs, it must verify agreement before broadcasting. After signing, rerun the eligibility rule over the final scriptSigs and require that the keys it recovers sum to the same A the outputs were derived from, refusing to broadcast otherwise. Stated over public keys like that, rather than by rebuilding the output from private keys as the reference implementation happens to do, it is the same check and a signer that keeps its keys off the host can perform it. This costs one addition per input and it turns a disagreement into a failed send with the coins still unspent.
+
+What it does not do is catch a receiver whose rule is stricter than the sender's. The check establishes that the sender agrees with itself, so it closes the case where a signer rewrites a scriptSig into a shape the sender's own reader would miss, and nothing more. The compressed-key departure above is exactly the case it cannot see, which is why that departure has to be settled rather than left to the check.
+
+This protects a sender against its own bugs. It does nothing about a third-party wallet that implements this scheme and gets the rule wrong, which is the argument for stating the check here rather than leaving it as an implementation detail.
+
+== Security considerations ==
+
+The shared secret multiply runs on a secret scalar, <code>input_hash * a</code> when sending and <code>input_hash * b_scan</code> when receiving. Leaking b_scan exposes every payment ever made to that address, which is worse than leaking a spending key for a single output. The reference implementation uses <code>secp256k1_ecdh</code>, which goes through <code>secp256k1_ecmult_const</code>, and not <code>secp256k1_ec_pubkey_tweak_mul</code>, which reaches the variable time <code>secp256k1_ecmult</code> meant for verification. Anyone reimplementing this should check which one they are calling, because both compile and both produce the right answer.
+
+A receiver that publishes one address forever hands every payer the same string, so payers can establish between themselves that they paid the same party. The sender always knows which output it created, so the scheme hides the link from third parties and not from the counterparty. The link also returns on chain when the receiver spends: a tip jar that sweeps its tips in one transaction shows every tipper the whole cluster, and each of them already knows which output was theirs. That is the use the motivation leads with, so it belongs here rather than being left implicit.
+
+A serving peer is trusted to be complete. <code>sptweaks</code> carries a height and no block hash, the index is keyed by height alone, and nothing commits a block's tweaks the way a filter header chain commits filters. A peer that omits one entry hides one payment, and the client has no way to detect it or to compare answers across peers. Any client that treats one peer's answer as authoritative inherits that.
+
+Scanning needs the wallet unlocked. The keys are derived from the HD master on every call and the live scanner returns early while locked, so an encrypted wallet receives nothing until it is opened, and the scan key is never held apart from the spend key. A light client that wants to scan with the scan key alone, which is the separation the scheme is built around, cannot do it with this wallet as written.
+
+== Adoption is the most likely thing to kill it ==
+
+A new address format is worth nothing until exchanges and wallets accept it. Dogecoin's wallet ecosystem is small and format changes have historically moved slowly. If Core ships this and nothing else does, the result is a correct feature almost nobody can receive on, and that is the likeliest failure mode here by a wide margin. It is worth deciding whether there is appetite from the larger services before this goes any further, because the integration work on their side is considerably larger than the wallet work on ours.
+
+== Backwards compatibility ==
+
+There is no consensus change. The outputs are ordinary P2PKH, so every existing node validates and relays them exactly as it does any other payment, and no node needs to know this scheme exists.
+
+The address itself is a new string and is the whole compatibility surface. It is bech32m and does not begin with D, so any service that validates recipients by pattern matching on a leading D will reject it. Those services need a change before a user can paste one in, which is the same class of work SegWit addresses required elsewhere and is the reason the adoption section above is not a formality.
+
+A wallet that does not implement this is unaffected and simply cannot send to or receive on a silent payment address. The tweak index is optional and off by default, so a node that does not set it carries no extra cost.
+
+== Reference implementation ==
+
+[https://github.com/xanimo/dogecoin/tree/fba5b6cfefdd21289c27f87d5922d96e43d3f798 sp-on-filters]
+on xanimo/dogecoin carries the bech32 and bech32m codec, <code>src/bip352.{h,cpp}</code> with the ported BIP352 test vectors and the constant time ECDH, <code>src/index/tweakindex.{h,cpp}</code> on the background index framework, silent payment keys derived from the HD seed, the three RPCs <code>getsilentpaymentaddress</code>, <code>sendtosilentpaymentaddress</code> and <code>scansilentpayments</code>, live scanning under <code>-silentpaymentscan</code>, labels that survive a restart, and end to end functional tests.
+
+The light client half is there too, in three parts. A serving node answers <code>getsptweaks</code> with a block's tweaks, behind <code>NODE_SP_TWEAKS</code> and <code>-peersptweaks</code>. <code>GetCandidateScripts</code> builds the scripts a receiver would own from a tweak alone, which is what lets a client ask about a block it has not downloaded. <code>scansilentpaymentsfiltered</code> chains the two: it derives the candidates for each block's tweaks, asks that block's BIP158 filter whether any appear, and reads only the blocks that match. Over a regtest chain of 228 blocks where 26 carry an eligible transaction it reads 2, querying 52 candidate scripts with no false positives. That ratio is not a mainnet figure and should not be read as one, since regtest is far sparser than the real chain and the wallet held no labels. The false positive rate does not need measuring at all: the filter keeps M = 784931 and the client asks one script per tweak plus one per label held, so the chance of reading a block for nothing is about tweaks * (labels + 1) / 784931. At the mean block and no labels that is 0.011 percent; for a thousand-tweak block and a wallet holding a hundred labels it is 13 percent, which is the cost the labels section warns about showing up again on the client side. It is stacked on the BIP157 and BIP158 compact filter backport, which is unmerged and proposed as [https://github.com/dogecoin/dogecoin/pull/4031 dogecoin/dogecoin#4031].
+[https://github.com/xanimo/dogecoin/tree/394374e4c15319571eb14a3f3019f7e807249c67 feature/bip352-silent-payments]
+is the same feature without that dependency, where the index is driven from ConnectBlock and does need a reindex to populate.
+
+The tweak index has been built over mainnet: 10771497975 bytes for 278571058 entries, complete to height 6381544, and the node restarts clean against it. The eligibility rule has been run over the whole chain rather than a sample, which is where the numbers above come from.
+
+Not done: the light client has never run against mainnet, only regtest, so every figure for it in this document is a shape rather than a measurement. No wallet outside Core implements either side.
+
+Review state: one reviewer has built the branch from source, run the unit and functional suites, and written independent regressions. That turned up two defects, both fixed. The first was in this feature: enabling live scanning skipped the payment in the next block, recoverable only by an explicit scan. The second was not, and is the more useful finding of the two. The shared background index persisted its progress locator before writing the block it named, so a crash in that window left the block unindexed and the restart resumed past it. That is <code>BaseIndex</code>, which <code>txindex</code> and the block filter index use equally, and it is fixed on the compact filter branch rather than here. Nobody else has read the cryptography.
+
+== What this document does not yet specify ==
+
+This is a rationale and a measurement report. Someone building a second wallet from it would have to read the branch for all of the following, and each is a place two implementations would silently disagree.
+
+The address encoding. The branch packs the version as a whole byte at the front of the payload and converts the lot, where BIP352 emits the version as its own 5-bit symbol ahead of the 66 key bytes. The two produce different strings for the same keys, 120 characters against 119, and neither decoder accepts the other's. The branch also rejects versions 1 to 30, where BIP352 says to read the first 66 bytes and ignore the rest. The prefix is <code>dsp</code>, which does begin with a lowercase d, so a service matching a leading D case-insensitively reaches the length check rather than failing on the first character.
+
+The key derivation. Scan and spend sit at m/352'/3'/0'/0' and m/352'/3'/0'/1', where BIP352 puts them elsewhere, so a seed carried to a wallet following the BIP finds nothing.
+
+The sighash rule. BIP352 states that ANYONECANPAY is unsafe, because the inputs must not change once the sender has signed. This document says nothing about it.
+
+The output group limit, which the branch fixes at 2323, and the <code>getsptweaks</code> and <code>sptweaks</code> payload layouts, which exist only as code.
+
+What P2PKH means. The 1.14 <code>Solver</code> matches the output template by opcode, so a 20-byte hash pushed with <code>OP_PUSHDATA1</code>, <code>2</code> or <code>4</code> is <code>TX_PUBKEYHASH</code> to the implementation, while the corpus tool that measured the rule matches the 25 canonical bytes. Spending such an output is non-standard and needs a miner to confirm, so the reach is small, but the tool and the code do not agree on the domain they are talking about.
+
+== Open questions for discussion ==
+
+Whether to extend past P2PKH to P2SH, and which redeem script shapes would qualify.
+
+Whether the tweak index ships in Core at all, given that the people who most need it are the people who cannot run a full node.
+
+What the address prefix should be, and whether a bech32m string is acceptable to services that currently pattern match on a leading D.
+
+What service bit and message names the tweak service should use. The implementation takes <code>1 << 25</code> for <code>NODE_SP_TWEAKS</code> and the names <code>getsptweaks</code> and <code>sptweaks</code>, chosen high to stay clear of upstream assignments rather than by any authority. These are wire-visible and changing them after anything ships is a compatibility break, so they want settling here.
+
+Whether a no_match input must abort the transaction or may be skipped. The reference implementation treats it as a hard error, and the measurement cannot settle the question because the case does not occur on the current chain.
+
+== References ==
+
+[https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki BIP352], the Bitcoin silent payments specification this derives from.
+
+[https://github.com/xanimo/dogecoin/blob/fba5b6cfefdd21289c27f87d5922d96e43d3f798/contrib/bip352/undo_corpus.py undo_corpus.py]
+in the reference branch, which produced the numbers above and can be re-run against any node with the blk and rev files present.
+
+The links above point at commits rather than branch tips, so they keep resolving to the code the measurements were taken against after the branches move or go away.
+
+== Copyright ==
+
+This document is licensed under the BSD-2-Clause license.
